@@ -1,0 +1,4 @@
+Fabric==1.10.1
+PyYAML>=3.10
+Click==4.0
+-e git+https://github.com/RussellLuo/platter.git#egg=platter
