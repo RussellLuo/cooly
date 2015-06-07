@@ -1,4 +1,4 @@
-"""An example showing how to deploy Python library."""
+"""An example showing how to deploy a Python library."""
 
 __version__ = '0.0.0'
 __author__ = 'RussellLuo'

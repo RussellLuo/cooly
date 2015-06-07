@@ -1,19 +1,19 @@
 archive:
   name: python_lib
-  repo: local@/tmp/cooly/repo/cooly/examples/python_lib
+  repo: local@/local/repository/path/to/python_lib
   tree_ish:
   output:
 
 build:
   host: builder@build-server
-  toolbin: /tmp/cooly/tool/venv/bin
-  output: /tmp/cooly/dist
+  toolbin: /remote/binary/path/to/cooly/tool
+  output: /local/path/to/store/distributions
   pre_script:
   post_script:
 
 install:
   hosts:
     - installer@install-server
-  path: /tmp/srv/app
+  path: /remote/path/to/install/python_lib
   pre_command:
   post_command:

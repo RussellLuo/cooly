@@ -2,7 +2,6 @@ import os
 from setuptools import setup, find_packages
 
 
-# x
 basedir = os.path.dirname(__file__)
 
 
