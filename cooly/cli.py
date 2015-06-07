@@ -30,14 +30,32 @@ def merge_arguments_with_config(part=None, requires=()):
     This decorator let the command prefer the arguments specified
     on command line to the values from the configuration file.
     """
+    def get_config_values(config):
+        """Get all valid values from the configuration file."""
+        try:
+            with open(config) as f:
+                config_values = yaml.load(f)
+        except IOError:
+            raise click.UsageError('Could not find the configuration file '
+                                   '"%s"!' % config)
+        except yaml.scanner.ScannerError:
+            raise click.UsageError('Found YAML syntax errors in the '
+                                   'configuration file! Please fix them.')
+        if config_values is None:
+            raise click.UsageError('The configuration file is empty! '
+                                   'Please fill in the required values.')
+        if not isinstance(config_values, dict):
+            raise click.UsageError('Found unexpected values in the '
+                                   'configuration file! Please correct them.')
+        return config_values
+
     def wrapper(command):
         @functools.wraps(command)
         def decorator(config, **kwargs):
             arguments = kwargs
             # Update `None` arguments if `config` is specified
             if config is not None:
-                with open(config) as f:
-                    config_values = yaml.load(f)
+                config_values = get_config_values(config)
                 for arg, value in arguments.iteritems():
                     if value is None:
                         if part:
@@ -48,7 +66,7 @@ def merge_arguments_with_config(part=None, requires=()):
                         arguments[arg] = c_value
             # Validate required arguments
             for arg in requires:
-                if arg is None:
+                if arguments[arg] is None:
                     raise click.UsageError('Missing argument "%s".None' % arg)
             return command(**arguments)
         return decorator
@@ -64,52 +82,48 @@ def cli():
 
 
 @cli.command('archive')
-@click.option('-c', '--config', default='cooly.yml',
-              help='The configuration file.')
+@click.option('-c', '--config', help='The configuration file.')
 @click.option('--name', help='The project name.')
 @click.option('--repo', help='The repository path (local or remote).')
 @click.option('--tree-ish',
               help='The tree or commit to produce an archive for.')
 @click.option('--output',
               help='The destination directory to store the archive.')
-@merge_arguments_with_config('archive')
+@merge_arguments_with_config('archive', requires=('name', 'repo'))
 def archive(name, repo, tree_ish, output):
     """Archive the package."""
     return fab('archive', name, repo, tree_ish or 'HEAD', output or '/tmp')
 
 
 @cli.command('build')
-@click.option('-c', '--config', default='cooly.yml',
-              help='The configuration file.')
+@click.option('-c', '--config', help='The configuration file.')
 @click.argument('pkg', required=True)
 @click.option('--host', help='The hostname of the build server.')
 @click.option('--toolbin', help='The bin path of Cooly on the build server.')
 @click.option('--output', help='The local folder to store the distribution.')
 @click.option('--pre-script', help='The script to run before building.')
 @click.option('--post-script', help='The script to run after building.')
-@merge_arguments_with_config('build')
+@merge_arguments_with_config('build', requires=('host', 'toolbin', 'output'))
 def build(pkg, host, toolbin, output, pre_script, post_script):
     """Build the package."""
     return fab('build', pkg, host, toolbin, output, pre_script, post_script)
 
 
 @cli.command('install')
-@click.option('-c', '--config', default='cooly.yml',
-              help='The configuration file.')
+@click.option('-c', '--config', help='The configuration file.')
 @click.argument('dist', required=True)
 @click.option('--hosts', help='The server hostname to install on.')
 @click.option('--path', help='The installation path on the server.')
 @click.option('--pre-command', help='The command to run before installing.')
 @click.option('--post-command', help='The command to run after installing.')
-@merge_arguments_with_config('install')
+@merge_arguments_with_config('install', requires=('hosts', 'path'))
 def install(dist, hosts, path, pre_command, post_command):
     """Install the distribution."""
     return fab('install', dist, hosts, path, pre_command, post_command)
 
 
 @cli.command('deploy')
-@click.option('-c', '--config', default='cooly.yml',
-              help='The configuration file.')
+@click.option('-c', '--config', help='The configuration file.')
 @click.option('--archive-name', help='The project name.')
 @click.option('--archive-repo', help='The repository path (local or remote).')
 @click.option('--archive-tree-ish',
@@ -131,7 +145,11 @@ def install(dist, hosts, path, pre_command, post_command):
               help='The command to run before installing.')
 @click.option('--install-post-command',
               help='The command to run after installing.')
-@merge_arguments_with_config()
+@merge_arguments_with_config(requires=(
+    'archive_name', 'archive_repo',
+    'build_host', 'build_toolbin', 'build_output',
+    'install_hosts', 'install_path'
+))
 def deploy(archive_name, archive_repo, archive_tree_ish,
            archive_output, build_host, build_toolbin, build_output,
            build_pre_script, build_post_script, install_hosts,
