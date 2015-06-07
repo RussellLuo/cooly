@@ -88,7 +88,11 @@ def build(pkg, host, toolbin, output, pre_script, post_script):
             )
 
             build_tool = os.path.join(toolbin, 'platter')
-            run('%s build .' % build_tool)
+            run('%s build %s %s .' % (
+                build_tool,
+                '--prebuild-script=%s' % pre_script if pre_script else '',
+                '--postbuild-script=%s' % post_script if post_script else ''
+            ))
 
             # Download the distribution
             local('mkdir -p %s' % output)
@@ -108,6 +112,10 @@ def install(dist, hosts, path, pre_command, post_command):
     print(yellow('>>> Install stage.'))
 
     with settings(host_string=';'.join(hosts)):
+        # Run the pre-install command if specified
+        if pre_command:
+            run(pre_command)
+
         # Upload the distribution
         install_tmp = '/tmp/cooly'
         run('rm -rf {0} && mkdir -p {0}'.format(install_tmp))
@@ -117,6 +125,10 @@ def install(dist, hosts, path, pre_command, post_command):
             # Extract the distribution, throwing away the toplevel folder
             run('tar --strip-components=1 -xzf %s/app.tar.gz' % install_tmp)
             run('./install.sh %s' % path)
+
+        # Run the post-install command if specified
+        if post_command:
+            run(post_command)
 
         # Clean up
         run('rm -rf %s' % install_tmp)
