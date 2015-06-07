@@ -119,12 +119,21 @@ def install(dist, hosts, path, pre_command, post_command):
         # Upload the distribution
         install_tmp = '/tmp/cooly'
         run('rm -rf {0} && mkdir -p {0}'.format(install_tmp))
-        put(dist, '%s/app.tar.gz' % install_tmp)
+        dist_name = os.path.basename(dist)
+        put(dist, '%s/%s' % (install_tmp, dist_name))
 
         with cd(install_tmp):
             # Extract the distribution, throwing away the toplevel folder
-            run('tar --strip-components=1 -xzf %s/app.tar.gz' % install_tmp)
-            run('./install.sh %s' % path)
+            run('tar --strip-components=1 -xzf %s' % dist_name)
+
+            # Install into a specific directory
+            install_path = os.path.join(path, dist_name.rstrip('.tar.gz'))
+            run('./install.sh %s' % install_path)
+
+            # Create or overwrite the symlink for the newly installed
+            # distribution to make it available
+            serve_path = os.path.join(path, 'current')
+            run('ln -sfn %s %s' % (install_path, serve_path))
 
         # Run the post-install command if specified
         if post_command:
