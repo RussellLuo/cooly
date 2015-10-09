@@ -29,9 +29,10 @@ setup(
         'Fabric==1.10.1',
         'PyYAML>=3.10',
         'Click==4.0',
+        'platter>=1.0-dev',
     ],
     dependency_links=[
-        'git+https://github.com/RussellLuo/platter.git#egg=platter',
+        'https://github.com/RussellLuo/platter/archive/master.zip#egg=platter-1.0-dev',
     ],
     entry_points={
         'console_scripts': [
