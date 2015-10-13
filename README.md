@@ -14,6 +14,11 @@ Install development version from `GitHub`:
     $ pip install -e git+https://github.com/RussellLuo/cooly.git#egg=cooly --process-dependency-links
 
 
+## Architecture
+
+![architecture](docs/architecture.png)
+
+
 ## Usage
 
 For how to use the `cooly` utility, see the help messages::
