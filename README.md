@@ -3,6 +3,11 @@
 A utility that helps you deploy Python projects.
 
 
+## Architecture
+
+![architecture](docs/architecture.png)
+
+
 ## Installation
 
 Install `Cooly` with `pip`:
@@ -12,11 +17,6 @@ Install `Cooly` with `pip`:
 Install development version from `GitHub`:
 
     $ pip install -e git+https://github.com/RussellLuo/cooly.git#egg=cooly --process-dependency-links
-
-
-## Architecture
-
-![architecture](docs/architecture.png)
 
 
 ## Usage
