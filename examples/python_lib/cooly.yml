@@ -5,7 +5,7 @@ archive:
   output:
 
 build:
-  host: builder@build-server
+  host: builder@building-server
   toolbin: /remote/binary/path/to/cooly/tool
   output: /local/path/to/store/distributions
   pre_script:
@@ -13,7 +13,8 @@ build:
 
 install:
   hosts:
-    - installer@install-server
+    - installer@production-server
   path: /remote/path/to/install/python_lib
   pre_command:
   post_command:
+  max_versions: 5

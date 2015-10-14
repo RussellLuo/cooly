@@ -5,7 +5,7 @@ archive:
   output:
 
 build:
-  host: builder@build-server
+  host: builder@building-server
   toolbin: /remote/binary/path/to/cooly/tool
   output: /local/path/to/store/distributions
   pre_script: /remote/path/to/prebuild/script/using/confplate.sh
@@ -13,7 +13,8 @@ build:
 
 install:
   hosts:
-    - installer@install-server
+    - installer@production-server
   path: /remote/path/to/install/web_app
   pre_command:
   post_command: supervisorctl -c /remote/path/to/install/web_app/current/data/etc/supervisord.conf restart all
+  max_versions: 5
