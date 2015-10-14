@@ -27,6 +27,45 @@ def pythonic_arguments(task):
     return decorator
 
 
+'''
+# The following version only works locally.
+
+def get_obsolete_version_names(path, max_versions, excludes=None):
+    """Get the names of all obsolete versions in local `path` except the
+    names specified in `excludes`. As a result, the number of the
+    latest versions in remote `path` is no more than `max_versions`.
+    """
+    excludes = excludes or []
+
+    candidates = os.listdir(path)
+    names = set(candidates) - set(excludes)
+
+    ctime = lambda name: os.stat(os.path.join(path, name)).st_ctime
+    sorted_names = sorted(names, key=ctime, reverse=True)
+
+    return sorted_names[max_versions:]
+'''
+
+
+def get_obsolete_version_names(path, max_versions, ignore_pattern=''):
+    """Get the names of all obsolete versions in remote `path` except the
+    names matching the `ignore_pattern`. As a result, the number of the
+    latest versions in remote `path` is no more than `max_versions`.
+    """
+    # List all names of the entries in `path`
+    # Options:
+    #     -1: list one file per line
+    #     -t: sort by modification time, neweset first
+    #     -I PATTERN: do not list implied entries matching shell PATTERN
+    ignore_option = '-I %s' % ignore_pattern if ignore_pattern else ''
+    result = run('ls -1t %s %s' % (ignore_option, path))
+
+    # Convert the result, a single (likely multiline) string, to a list
+    names = result.split()
+
+    return names[max_versions:]
+
+
 @task
 @pythonic_arguments
 def archive(name, repo, tree_ish, output):
@@ -107,7 +146,7 @@ def build(pkg, host, toolbin, output, pre_script, post_script):
 
 @task
 @pythonic_arguments
-def install(dist, hosts, path, pre_command, post_command):
+def install(dist, hosts, path, pre_command, post_command, max_versions):
     """Install the distribution."""
     print(yellow('>>> Install stage.'))
 
@@ -139,6 +178,16 @@ def install(dist, hosts, path, pre_command, post_command):
         if post_command:
             run(post_command)
 
+        # Limit the number of the versions if required
+        if isinstance(max_versions, int) and max_versions > 0:
+            version_names = get_obsolete_version_names(
+                path, max_versions,
+                ignore_pattern='current'
+            )
+            if version_names:
+                with cd(path):
+                    run('rm -rf %s' % ' '.join(version_names))
+
         # Clean up
         run('rm -rf %s' % install_tmp)
 
@@ -147,14 +196,14 @@ def install(dist, hosts, path, pre_command, post_command):
 
 @task
 @pythonic_arguments
-def deploy(archive_name, archive_repo, archive_tree_ish,
-           archive_output, build_host, build_toolbin, build_output,
-           build_pre_script, build_post_script, install_hosts,
-           install_path, install_pre_command, install_post_command):
+def deploy(archive_name, archive_repo, archive_tree_ish, archive_output,
+           build_host, build_toolbin, build_output, build_pre_script,
+           build_post_script, install_hosts, install_path,
+           install_pre_command, install_post_command, install_max_versions):
     """Deploy the package."""
     pkg = archive(archive_name, archive_repo, archive_tree_ish,
                   archive_output)
     dist = build(pkg, build_host, build_toolbin, build_output,
                  build_pre_script, build_post_script)
-    install(dist, install_hosts, install_path,
-            install_pre_command, install_post_command)
+    install(dist, install_hosts, install_path, install_pre_command,
+            install_post_command, install_max_versions)

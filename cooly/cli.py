@@ -116,10 +116,16 @@ def build(pkg, host, toolbin, output, pre_script, post_script):
 @click.option('--path', help='The installation path on the server.')
 @click.option('--pre-command', help='The command to run before installing.')
 @click.option('--post-command', help='The command to run after installing.')
+@click.option('--max-versions',
+              help='The maximum number of the versions installed. '
+                   'If specified (must be greater than 0), the earliest '
+                   'versions will be removed when the number exceeds the '
+                   'limit. Defaults to be unlimited.')
 @merge_arguments_with_config('install', requires=('hosts', 'path'))
-def install(dist, hosts, path, pre_command, post_command):
+def install(dist, hosts, path, pre_command, post_command, max_versions):
     """Install the distribution."""
-    return fab('install', dist, hosts, path, pre_command, post_command)
+    return fab('install', dist, hosts, path,
+               pre_command, post_command, max_versions)
 
 
 @cli.command('deploy')
@@ -145,18 +151,23 @@ def install(dist, hosts, path, pre_command, post_command):
               help='The command to run before installing.')
 @click.option('--install-post-command',
               help='The command to run after installing.')
+@click.option('--install-max-versions',
+              help='The maximum number of the versions installed. '
+                   'If specified (must be greater than 0), the earliest '
+                   'versions will be removed when the number exceeds the '
+                   'limit. Defaults to be unlimited.')
 @merge_arguments_with_config(requires=(
     'archive_name', 'archive_repo',
     'build_host', 'build_toolbin', 'build_output',
     'install_hosts', 'install_path'
 ))
-def deploy(archive_name, archive_repo, archive_tree_ish,
-           archive_output, build_host, build_toolbin, build_output,
-           build_pre_script, build_post_script, install_hosts,
-           install_path, install_pre_command, install_post_command):
+def deploy(archive_name, archive_repo, archive_tree_ish, archive_output,
+           build_host, build_toolbin, build_output, build_pre_script,
+           build_post_script, install_hosts, install_path,
+           install_pre_command, install_post_command, install_max_versions):
     """Deploy the package."""
     return fab('deploy', archive_name, archive_repo,
                archive_tree_ish or 'HEAD', archive_output or '/tmp',
-               build_host, build_toolbin, build_output,
-               build_pre_script, build_post_script, install_hosts,
-               install_path, install_pre_command, install_post_command)
+               build_host, build_toolbin, build_output, build_pre_script,
+               build_post_script, install_hosts, install_path,
+               install_pre_command, install_post_command, install_max_versions)
