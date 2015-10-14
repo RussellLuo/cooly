@@ -86,9 +86,11 @@ def cli():
 @click.option('--name', help='The project name.')
 @click.option('--repo', help='The repository path (local or remote).')
 @click.option('--tree-ish',
-              help='The tree or commit to produce an archive for.')
+              help='The tree or commit to produce an archive for. '
+                   'Defaults to `HEAD`.')
 @click.option('--output',
-              help='The destination directory to store the archive.')
+              help='The destination directory to store the archive. '
+                   'Defaults to `/tmp`.')
 @merge_arguments_with_config('archive', requires=('name', 'repo'))
 def archive(name, repo, tree_ish, output):
     """Archive the package."""
@@ -133,9 +135,11 @@ def install(dist, hosts, path, pre_command, post_command, max_versions):
 @click.option('--archive-name', help='The project name.')
 @click.option('--archive-repo', help='The repository path (local or remote).')
 @click.option('--archive-tree-ish',
-              help='The tree or commit to produce an archive for.')
+              help='The tree or commit to produce an archive for. '
+                   'Defaults to `HEAD`.')
 @click.option('--archive-output',
-              help='The destination directory to store the archive.')
+              help='The destination directory to store the archive. '
+                   'Defaults to `/tmp`.')
 @click.option('--build-host', help='The hostname of the build server.')
 @click.option('--build-toolbin',
               help='The bin path of Cooly on the build server.')
