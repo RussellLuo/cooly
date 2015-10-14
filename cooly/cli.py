@@ -103,12 +103,19 @@ def archive(name, repo, tree_ish, output):
 @click.option('--host', help='The hostname of the build server.')
 @click.option('--toolbin', help='The bin path of Cooly on the build server.')
 @click.option('--output', help='The local folder to store the distribution.')
+@click.option('--requirements',
+              help='The path to a requirements file which contains '
+                   'additional packages that should be installed in '
+                   'addition to the main ones pulled from the `setup.py` '
+                   'file. The path can be absolute, or be relative to '
+                   'the root directory of the project.')
 @click.option('--pre-script', help='The script to run before building.')
 @click.option('--post-script', help='The script to run after building.')
 @merge_arguments_with_config('build', requires=('host', 'toolbin', 'output'))
-def build(pkg, host, toolbin, output, pre_script, post_script):
+def build(pkg, host, toolbin, output, requirements, pre_script, post_script):
     """Build the package."""
-    return fab('build', pkg, host, toolbin, output, pre_script, post_script)
+    return fab('build', pkg, host, toolbin, output,
+               requirements, pre_script, post_script)
 
 
 @cli.command('install')
@@ -145,6 +152,12 @@ def install(dist, hosts, path, pre_command, post_command, max_versions):
               help='The bin path of Cooly on the build server.')
 @click.option('--build-output',
               help='The local folder to store the distribution.')
+@click.option('--build-requirements',
+              help='The path to a requirements file which contains '
+                   'additional packages that should be installed in '
+                   'addition to the main ones pulled from the `setup.py` '
+                   'file. The path can be absolute, or be relative to '
+                   'the root directory of the project.')
 @click.option('--build-pre-script',
               help='The script to run before building.')
 @click.option('--build-post-script',
@@ -166,12 +179,13 @@ def install(dist, hosts, path, pre_command, post_command, max_versions):
     'install_hosts', 'install_path'
 ))
 def deploy(archive_name, archive_repo, archive_tree_ish, archive_output,
-           build_host, build_toolbin, build_output, build_pre_script,
-           build_post_script, install_hosts, install_path,
+           build_host, build_toolbin, build_output, build_requirements,
+           build_pre_script, build_post_script, install_hosts, install_path,
            install_pre_command, install_post_command, install_max_versions):
     """Deploy the package."""
     return fab('deploy', archive_name, archive_repo,
                archive_tree_ish or 'HEAD', archive_output or '/tmp',
-               build_host, build_toolbin, build_output, build_pre_script,
-               build_post_script, install_hosts, install_path,
-               install_pre_command, install_post_command, install_max_versions)
+               build_host, build_toolbin, build_output, build_requirements,
+               build_pre_script, build_post_script, install_hosts,
+               install_path, install_pre_command, install_post_command,
+               install_max_versions)

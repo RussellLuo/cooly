@@ -106,7 +106,7 @@ def archive(name, repo, tree_ish, output):
 
 @task
 @pythonic_arguments
-def build(pkg, host, toolbin, output, pre_script, post_script):
+def build(pkg, host, toolbin, output, requirements, pre_script, post_script):
     """Build the package."""
     print(yellow('>>> Build stage.'))
 
@@ -127,8 +127,9 @@ def build(pkg, host, toolbin, output, pre_script, post_script):
             )
 
             build_tool = os.path.join(toolbin, 'platter')
-            run('%s build %s %s .' % (
+            run('%s build %s %s %s .' % (
                 build_tool,
+                '--requirements=%s' % requirements if requirements else '',
                 '--prebuild-script=%s' % pre_script if pre_script else '',
                 '--postbuild-script=%s' % post_script if post_script else ''
             ))
@@ -197,13 +198,13 @@ def install(dist, hosts, path, pre_command, post_command, max_versions):
 @task
 @pythonic_arguments
 def deploy(archive_name, archive_repo, archive_tree_ish, archive_output,
-           build_host, build_toolbin, build_output, build_pre_script,
-           build_post_script, install_hosts, install_path,
+           build_host, build_toolbin, build_output, build_requirements,
+           build_pre_script, build_post_script, install_hosts, install_path,
            install_pre_command, install_post_command, install_max_versions):
     """Deploy the package."""
     pkg = archive(archive_name, archive_repo, archive_tree_ish,
                   archive_output)
     dist = build(pkg, build_host, build_toolbin, build_output,
-                 build_pre_script, build_post_script)
+                 build_requirements, build_pre_script, build_post_script)
     install(dist, install_hosts, install_path, install_pre_command,
             install_post_command, install_max_versions)
