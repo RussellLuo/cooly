@@ -1,6 +1,6 @@
 archive:
   name: python_lib
-  repo: local@/local/repository/path/to/python_lib
+  repo: file:///local/repository/path/to/python_lib
   tree_ish:
   output:
 

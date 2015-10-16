@@ -84,7 +84,9 @@ def cli():
 @cli.command('archive')
 @click.option('-c', '--config', help='The configuration file.')
 @click.option('--name', help='The project name.')
-@click.option('--repo', help='The repository path (local or remote).')
+@click.option('--repo',
+              help='The repository url, which can be a local path '
+                   '(starts with "file://") or a remote VCS url.')
 @click.option('--tree-ish',
               help='The tree or commit to produce an archive for. '
                    'Defaults to `HEAD`.')
@@ -140,7 +142,9 @@ def install(dist, hosts, path, pre_command, post_command, max_versions):
 @cli.command('deploy')
 @click.option('-c', '--config', help='The configuration file.')
 @click.option('--archive-name', help='The project name.')
-@click.option('--archive-repo', help='The repository path (local or remote).')
+@click.option('--archive-repo',
+              help='The repository url, which can be a local path '
+                   '(starts with "file://") or a remote VCS url.')
 @click.option('--archive-tree-ish',
               help='The tree or commit to produce an archive for. '
                    'Defaults to `HEAD`.')

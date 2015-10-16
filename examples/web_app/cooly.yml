@@ -1,6 +1,6 @@
 archive:
   name: web_app
-  repo: local@/local/repository/path/to/web_app
+  repo: file:///local/repository/path/to/web_app
   tree_ish:
   output:
 

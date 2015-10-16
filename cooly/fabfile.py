@@ -72,20 +72,17 @@ def archive(name, repo, tree_ish, output):
     """Archive the package."""
     print(yellow('>>> Archive stage.'))
 
-    repo_location, repo_url = repo.split('@', 1)
     # Archive local repository
-    if repo_location == 'local':
-        repo_path = repo_url
+    if repo.startswith('file://'):
+        repo_path = repo[len('file://'):]
     # Archive remote repository
     # since `git archive --remote` is not widely supported,
     # we use `git clone` first, and then use `git archive` locally
-    elif repo_location == 'remote':
+    else:
         repo_tmp = tempfile.mkdtemp()
         with lcd(repo_tmp):
-            local('git clone %s' % repo_url)
+            local('git clone %s' % repo)
         repo_path = os.path.join(repo_tmp, name)
-    else:
-        raise RuntimeError('Argument `repo` is not recognized')
 
     pkg = os.path.join(
         output,
