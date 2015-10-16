@@ -8,6 +8,7 @@ build:
   host: builder@building-server
   toolbin: /remote/binary/path/to/cooly/tool
   output: /local/path/to/store/distributions
+  requirements:
   pre_script:
   post_script:
 

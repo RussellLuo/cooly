@@ -188,6 +188,9 @@ def install(dist, hosts, path, pre_command, post_command, max_versions):
             if version_names:
                 with cd(path):
                     run('rm -rf %s' % ' '.join(version_names))
+        else:
+            raise RuntimeError('Argument `max_versions` is not a '
+                               'positive integer')
 
         # Clean up
         run('rm -rf %s' % install_tmp)
