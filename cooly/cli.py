@@ -113,7 +113,7 @@ def archive(name, repo, tree_ish, output):
                    'the root directory of the project.')
 @click.option('--pre-script', help='The script to run before building.')
 @click.option('--post-script', help='The script to run after building.')
-@merge_arguments_with_config('build', requires=('host', 'toolbin', 'output'))
+@merge_arguments_with_config('build', requires=('toolbin', 'output'))
 def build(pkg, host, toolbin, output, requirements, pre_script, post_script):
     """Build the package."""
     return fab('build', pkg, host, toolbin, output,
@@ -179,7 +179,7 @@ def install(dist, hosts, path, pre_command, post_command, max_versions):
                    'limit. Defaults to be unlimited.')
 @merge_arguments_with_config(requires=(
     'archive_name', 'archive_repo',
-    'build_host', 'build_toolbin', 'build_output',
+    'build_toolbin', 'build_output',
     'install_hosts', 'install_path'
 ))
 def deploy(archive_name, archive_repo, archive_tree_ish, archive_output,

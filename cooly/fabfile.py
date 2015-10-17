@@ -66,6 +66,11 @@ def get_obsolete_version_names(path, max_versions, ignore_pattern=''):
     return names[max_versions:]
 
 
+def cp(source, dest):
+    """Copy `source` to `dest` locally."""
+    local('cp -rf %s %s' % (source, dest))
+
+
 @task
 @pythonic_arguments
 def archive(name, repo, tree_ish, output):
@@ -107,16 +112,23 @@ def build(pkg, host, toolbin, output, requirements, pre_script, post_script):
     """Build the package."""
     print(yellow('>>> Build stage.'))
 
+    # Remote operations
+    if host:
+        smart_cd, smart_run, smart_put, smart_get = cd, run, put, get
+    # Local operations
+    else:
+        smart_cd, smart_run, smart_put, smart_get = lcd, local, cp, cp
+
     with settings(host_string=host):
         # Upload the package
         build_tmp = '/tmp/cooly'
-        run('mkdir -p %s' % build_tmp)
+        smart_run('mkdir -p %s' % build_tmp)
         pkg_name = os.path.basename(pkg)
-        put(pkg, '%s/%s' % (build_tmp, pkg_name))
+        smart_put(pkg, '%s/%s' % (build_tmp, pkg_name))
 
         # Build there
-        with cd(build_tmp):
-            run('tar xzf %s' % pkg_name)
+        with smart_cd(build_tmp):
+            smart_run('tar xzf %s' % pkg_name)
             now = datetime.now().strftime('%Y%m%d%H%M%S')
             dist = os.path.join(
                 output,
@@ -124,7 +136,7 @@ def build(pkg, host, toolbin, output, requirements, pre_script, post_script):
             )
 
             build_tool = os.path.join(toolbin, 'platter')
-            run('%s build %s %s %s .' % (
+            smart_run('%s build %s %s %s .' % (
                 build_tool,
                 '--requirements=%s' % requirements if requirements else '',
                 '--prebuild-script=%s' % pre_script if pre_script else '',
@@ -133,10 +145,10 @@ def build(pkg, host, toolbin, output, requirements, pre_script, post_script):
 
             # Download the distribution
             local('mkdir -p %s' % output)
-            get('dist/*.tar.gz', dist)
+            smart_get('dist/*.tar.gz', dist)
 
         # Clean up
-        run('rm -rf %s' % build_tmp)
+        smart_run('rm -rf %s' % build_tmp)
 
     print(green('>>> Distribution %s created!' % dist))
     return dist
