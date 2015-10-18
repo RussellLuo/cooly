@@ -16,7 +16,12 @@ FABFILE = os.path.join(pkgpath, 'fabfile.py')
 
 def fab(cmd, *args):
     """Run `cmd` with `args` via the fab command."""
-    unicode_args = [unicode(arg) for arg in args]
+    unicode_args = [
+        unicode(
+            ';'.join(arg) if isinstance(arg, (list, tuple)) else arg
+        )
+        for arg in args
+    ]
     full_cmd = [
         FABCMD, '-f', FABFILE,
         '%s:%s' % (cmd, ','.join(unicode_args))
@@ -49,15 +54,17 @@ def merge_arguments_with_config(part=None, requires=()):
                                    'configuration file! Please correct them.')
         return config_values
 
+    NULL_VALUES = (None, (), [])
+
     def wrapper(command):
         @functools.wraps(command)
         def decorator(config, **kwargs):
             arguments = kwargs
-            # Update `None` arguments if `config` is specified
+            # Update null arguments if `config` is specified
             if config is not None:
                 config_values = get_config_values(config)
                 for arg, value in arguments.iteritems():
-                    if value is None:
+                    if value in NULL_VALUES:
                         if part:
                             c_part, c_arg = part, arg
                         else:
@@ -66,8 +73,10 @@ def merge_arguments_with_config(part=None, requires=()):
                         arguments[arg] = c_value
             # Validate required arguments
             for arg in requires:
-                if arguments[arg] is None:
-                    raise click.UsageError('Missing argument "%s".None' % arg)
+                if arguments[arg] in NULL_VALUES:
+                    raise click.UsageError(
+                        'Missing argument "%s".%r' % (arg, arguments[arg])
+                    )
             return command(**arguments)
         return decorator
     return wrapper
@@ -134,7 +143,8 @@ def build(pkg, host, toolbin, output, requirements, pre_script, post_script):
 @click.option('-c', '--config', help='The configuration file.')
 @click.argument('dist', required=True)
 @click.option('--hosts',
-              help='The hostnames of the servers to install on.')
+              help='The hostnames of the servers to install on.',
+              multiple=True)
 @click.option('--path', help='The installation path on the server.')
 @click.option('--pre-command', help='The command to run before installing.')
 @click.option('--post-command', help='The command to run after installing.')
@@ -184,7 +194,8 @@ def install(dist, hosts, path, pre_command, post_command, max_versions):
 @click.option('--build-post-script',
               help='The script to run after building.')
 @click.option('--install-hosts',
-              help='The hostnames of the servers to install on.')
+              help='The hostnames of the servers to install on.',
+              multiple=True)
 @click.option('--install-path', help='The installation path on the server.')
 @click.option('--install-pre-command',
               help='The command to run before installing.')

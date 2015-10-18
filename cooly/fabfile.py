@@ -3,7 +3,9 @@ import tempfile
 import functools
 import datetime
 
-from fabric.api import task, settings, lcd, local, cd, run, put, get
+from fabric.api import (
+    task, settings, lcd, local, cd, run, put, get, execute
+)
 from fabric.colors import green, yellow
 
 
@@ -11,7 +13,9 @@ EXT = '.tar.gz'
 
 
 def pythonic_arguments(task):
-    """Try to evaluate all meaningful strings to Python values."""
+    """A decorator that tries to evaluate all meaningful strings to
+    Python values.
+    """
     def evaluate(string):
         try:
             value = eval(string)
@@ -170,9 +174,11 @@ def build(pkg, host, toolbin, output, requirements, pre_script, post_script):
 @pythonic_arguments
 def install(dist, hosts, path, pre_command, post_command, max_versions):
     """Install the distribution."""
-    print(yellow('>>> Install stage.'))
 
-    with settings(host_string=';'.join(hosts)):
+    def work():
+        """The actual installation work."""
+        print(yellow('>>> Install stage.'))
+
         # Run the pre-install command if specified
         if pre_command:
             run(pre_command)
@@ -216,7 +222,11 @@ def install(dist, hosts, path, pre_command, post_command, max_versions):
         # Clean up
         run('rm -rf %s' % install_tmp)
 
-    print(green('>>> Distribution %s installed!' % dist))
+        print(green('>>> Distribution %s installed!' % dist))
+
+    # Execute the work on multiple hosts (serially, by default)
+    host_list = hosts.split(';')
+    execute(work, hosts=host_list)
 
 
 @task
