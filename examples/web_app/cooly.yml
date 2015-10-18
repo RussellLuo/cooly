@@ -1,12 +1,12 @@
 archive:
-  name: web_app
   repo: file:///local/repository/path/to/web_app
   tree_ish:
+  name_format:
   output:
 
 build:
-  host: builder@building-server
-  toolbin: /remote/binary/path/to/cooly/tool
+  host: builder@build-server
+  toolbin: /binary/path/to/cooly/tool/on/build/server
   output: /local/path/to/store/distributions
   requirements:
   pre_script: /remote/path/to/prebuild/script/using/confplate.sh
@@ -15,7 +15,7 @@ build:
 install:
   hosts:
     - installer@production-server
-  path: /remote/path/to/install/web_app
+  path: /installation/path/to/web_app/on/production/server
   pre_command:
   post_command: supervisorctl -c /remote/path/to/install/web_app/current/data/etc/supervisord.conf restart all
   max_versions: 5

@@ -1,12 +1,12 @@
 archive:
-  name: python_lib
   repo: file:///local/repository/path/to/python_lib
   tree_ish:
+  name_format:
   output:
 
 build:
-  host: builder@building-server
-  toolbin: /remote/binary/path/to/cooly/tool
+  host: builder@build-server
+  toolbin: /binary/path/to/cooly/tool/on/build/server
   output: /local/path/to/store/distributions
   requirements:
   pre_script:
@@ -15,7 +15,7 @@ build:
 install:
   hosts:
     - installer@production-server
-  path: /remote/path/to/install/python_lib
+  path: /installation/path/to/web_app/on/production/server
   pre_command:
   post_command:
   max_versions: 5
