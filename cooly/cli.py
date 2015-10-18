@@ -83,7 +83,6 @@ def cli():
 
 @cli.command('archive')
 @click.option('-c', '--config', help='The configuration file.')
-@click.option('--name', help='The project name.')
 @click.option('--repo',
               help='The repository url, which can be a local path '
                    '(starts with "file://") or a remote VCS url.')
@@ -93,10 +92,10 @@ def cli():
 @click.option('--output',
               help='The destination directory to store the archive. '
                    'Defaults to `/tmp`.')
-@merge_arguments_with_config('archive', requires=('name', 'repo'))
-def archive(name, repo, tree_ish, output):
+@merge_arguments_with_config('archive', requires=('repo'))
+def archive(repo, tree_ish, output):
     """Archive the package."""
-    return fab('archive', name, repo, tree_ish or 'HEAD', output or '/tmp')
+    return fab('archive', repo, tree_ish or 'HEAD', output or '/tmp')
 
 
 @cli.command('build')
@@ -144,7 +143,6 @@ def install(dist, hosts, path, pre_command, post_command, max_versions):
 
 @cli.command('deploy')
 @click.option('-c', '--config', help='The configuration file.')
-@click.option('--archive-name', help='The project name.')
 @click.option('--archive-repo',
               help='The repository url, which can be a local path '
                    '(starts with "file://") or a remote VCS url.')
@@ -184,16 +182,16 @@ def install(dist, hosts, path, pre_command, post_command, max_versions):
                    'versions will be removed when the number exceeds the '
                    'limit. Defaults to be unlimited.')
 @merge_arguments_with_config(requires=(
-    'archive_name', 'archive_repo',
+    'archive_repo',
     'build_toolbin', 'build_output',
     'install_hosts', 'install_path'
 ))
-def deploy(archive_name, archive_repo, archive_tree_ish, archive_output,
+def deploy(archive_repo, archive_tree_ish, archive_output,
            build_host, build_toolbin, build_output, build_requirements,
            build_pre_script, build_post_script, install_hosts, install_path,
            install_pre_command, install_post_command, install_max_versions):
     """Deploy the package."""
-    return fab('deploy', archive_name, archive_repo,
+    return fab('deploy', archive_repo,
                archive_tree_ish or 'HEAD', archive_output or '/tmp',
                build_host, build_toolbin, build_output, build_requirements,
                build_pre_script, build_post_script, install_hosts,

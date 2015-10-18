@@ -61,7 +61,7 @@ def get_obsolete_version_names(path, max_versions, ignore_pattern=''):
     result = run('ls -1t %s %s' % (ignore_option, path))
 
     # Convert the result, a single (likely multiline) string, to a list
-    names = result.split()
+    names = result.splitlines()
 
     return names[max_versions:]
 
@@ -73,7 +73,7 @@ def cp(source, dest):
 
 @task
 @pythonic_arguments
-def archive(name, repo, tree_ish, output):
+def archive(repo, tree_ish, output):
     """Archive the package."""
     print(yellow('>>> Archive stage.'))
 
@@ -87,7 +87,14 @@ def archive(name, repo, tree_ish, output):
         repo_tmp = tempfile.mkdtemp()
         with lcd(repo_tmp):
             local('git clone %s' % repo)
-        repo_path = os.path.join(repo_tmp, name)
+        repo_path = local('ls -d %s/*' % repo_tmp, capture=True)
+
+    # Analyze the package
+    setup_py = os.path.join(repo_path, 'setup.py')
+    if not os.path.isfile(setup_py):
+        raise RuntimeError('No `setup.py` found in the package %r' % repo_path)
+    name, version = local('python %s --name --version' % setup_py,
+                          capture=True).splitlines()
 
     pkg = os.path.join(
         output,
@@ -209,12 +216,12 @@ def install(dist, hosts, path, pre_command, post_command, max_versions):
 
 @task
 @pythonic_arguments
-def deploy(archive_name, archive_repo, archive_tree_ish, archive_output,
+def deploy(archive_repo, archive_tree_ish, archive_output,
            build_host, build_toolbin, build_output, build_requirements,
            build_pre_script, build_post_script, install_hosts, install_path,
            install_pre_command, install_post_command, install_max_versions):
     """Deploy the package."""
-    pkg = archive(archive_name, archive_repo, archive_tree_ish,
+    pkg = archive(archive_repo, archive_tree_ish,
                   archive_output)
     dist = build(pkg, build_host, build_toolbin, build_output,
                  build_requirements, build_pre_script, build_post_script)
