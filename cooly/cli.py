@@ -89,13 +89,22 @@ def cli():
 @click.option('--tree-ish',
               help='The tree or commit to produce an archive for. '
                    'Defaults to `HEAD`.')
+@click.option('--name-format',
+              help='The format of the archive name. Defaults to '
+                   '`{name}-{version}-{tree_ish}-{datetime:%Y%m%d%H%M%S}`. '
+                   'The are now 4 optional bulit-in variables: {name}, '
+                   '{version}, {tree_ish}, {datetime}.')
 @click.option('--output',
               help='The destination directory to store the archive. '
                    'Defaults to `/tmp`.')
-@merge_arguments_with_config('archive', requires=('repo'))
-def archive(repo, tree_ish, output):
+@merge_arguments_with_config('archive', requires=('repo',))
+def archive(repo, tree_ish, name_format, output):
     """Archive the package."""
-    return fab('archive', repo, tree_ish or 'HEAD', output or '/tmp')
+    name_format = name_format or (
+        '{name}-{version}-{tree_ish}-{datetime:%Y%m%d%H%M%S}'
+    )
+    return fab('archive', repo, tree_ish or 'HEAD',
+               name_format, output or '/tmp')
 
 
 @cli.command('build')
@@ -149,6 +158,11 @@ def install(dist, hosts, path, pre_command, post_command, max_versions):
 @click.option('--archive-tree-ish',
               help='The tree or commit to produce an archive for. '
                    'Defaults to `HEAD`.')
+@click.option('--archive-name-format',
+              help='The format of the archive name. Defaults to '
+                   '`{name}-{version}-{tree_ish}-{datetime:%Y%m%d%H%M%S}`. '
+                   'The are now 4 optional bulit-in variables: {name}, '
+                   '{version}, {tree_ish}, {datetime}.')
 @click.option('--archive-output',
               help='The destination directory to store the archive. '
                    'Defaults to `/tmp`.')
@@ -186,13 +200,16 @@ def install(dist, hosts, path, pre_command, post_command, max_versions):
     'build_toolbin', 'build_output',
     'install_hosts', 'install_path'
 ))
-def deploy(archive_repo, archive_tree_ish, archive_output,
+def deploy(archive_repo, archive_tree_ish, archive_name_format, archive_output,
            build_host, build_toolbin, build_output, build_requirements,
            build_pre_script, build_post_script, install_hosts, install_path,
            install_pre_command, install_post_command, install_max_versions):
     """Deploy the package."""
-    return fab('deploy', archive_repo,
-               archive_tree_ish or 'HEAD', archive_output or '/tmp',
+    archive_name_format = archive_name_format or (
+        '{name}-{version}-{tree_ish}-{datetime:%Y%m%d%H%M%S}'
+    )
+    return fab('deploy', archive_repo, archive_tree_ish or 'HEAD',
+               archive_name_format, archive_output or '/tmp',
                build_host, build_toolbin, build_output, build_requirements,
                build_pre_script, build_post_script, install_hosts,
                install_path, install_pre_command, install_post_command,

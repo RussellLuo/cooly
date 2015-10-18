@@ -1,10 +1,13 @@
 import os
 import tempfile
 import functools
-from datetime import datetime
+import datetime
 
 from fabric.api import task, settings, lcd, local, cd, run, put, get
 from fabric.colors import green, yellow
+
+
+EXT = '.tar.gz'
 
 
 def pythonic_arguments(task):
@@ -73,7 +76,7 @@ def cp(source, dest):
 
 @task
 @pythonic_arguments
-def archive(repo, tree_ish, output):
+def archive(repo, tree_ish, name_format, output):
     """Archive the package."""
     print(yellow('>>> Archive stage.'))
 
@@ -96,10 +99,16 @@ def archive(repo, tree_ish, output):
     name, version = local('python %s --name --version' % setup_py,
                           capture=True).splitlines()
 
-    pkg = os.path.join(
-        output,
-        '%s-%s.tar.gz' % (name, tree_ish)
+    pkg_name = '%s%s' % (
+        name_format.format(
+            name=name,
+            version=version,
+            tree_ish=tree_ish,
+            datetime=datetime.datetime.now()
+        ),
+        EXT
     )
+    pkg = os.path.join(output, pkg_name)
     with lcd(repo_path):
         local('git archive -o "%s" %s' % (pkg, tree_ish))
 
@@ -131,16 +140,12 @@ def build(pkg, host, toolbin, output, requirements, pre_script, post_script):
         build_tmp = '/tmp/cooly'
         smart_run('mkdir -p %s' % build_tmp)
         pkg_name = os.path.basename(pkg)
-        smart_put(pkg, '%s/%s' % (build_tmp, pkg_name))
+        smart_put(pkg, os.path.join(build_tmp, pkg_name))
 
         # Build there
         with smart_cd(build_tmp):
             smart_run('tar xzf %s' % pkg_name)
-            now = datetime.now().strftime('%Y%m%d%H%M%S')
-            dist = os.path.join(
-                output,
-                '%s-%s.tar.gz' % (pkg_name.rstrip('.tar.gz'), now)
-            )
+            dist = os.path.join(output, pkg_name)
 
             build_tool = os.path.join(toolbin, 'platter')
             smart_run('%s build %s %s %s .' % (
@@ -152,7 +157,7 @@ def build(pkg, host, toolbin, output, requirements, pre_script, post_script):
 
             # Download the distribution
             local('mkdir -p %s' % output)
-            smart_get('dist/*.tar.gz', dist)
+            smart_get('dist/*%s' % EXT, dist)
 
         # Clean up
         smart_run('rm -rf %s' % build_tmp)
@@ -176,14 +181,14 @@ def install(dist, hosts, path, pre_command, post_command, max_versions):
         install_tmp = '/tmp/cooly'
         run('rm -rf {0} && mkdir -p {0}'.format(install_tmp))
         dist_name = os.path.basename(dist)
-        put(dist, '%s/%s' % (install_tmp, dist_name))
+        put(dist, os.path.join(install_tmp, dist_name))
 
         with cd(install_tmp):
             # Extract the distribution, throwing away the toplevel folder
             run('tar --strip-components=1 -xzf %s' % dist_name)
 
             # Install into a specific directory
-            install_path = os.path.join(path, dist_name.rstrip('.tar.gz'))
+            install_path = os.path.join(path, dist_name.rstrip(EXT))
             run('./install.sh %s' % install_path)
 
             # Create or overwrite the symlink for the newly installed
@@ -216,12 +221,12 @@ def install(dist, hosts, path, pre_command, post_command, max_versions):
 
 @task
 @pythonic_arguments
-def deploy(archive_repo, archive_tree_ish, archive_output,
+def deploy(archive_repo, archive_tree_ish, archive_name_format, archive_output,
            build_host, build_toolbin, build_output, build_requirements,
            build_pre_script, build_post_script, install_hosts, install_path,
            install_pre_command, install_post_command, install_max_versions):
     """Deploy the package."""
-    pkg = archive(archive_repo, archive_tree_ish,
+    pkg = archive(archive_repo, archive_tree_ish, archive_name_format,
                   archive_output)
     dist = build(pkg, build_host, build_toolbin, build_output,
                  build_requirements, build_pre_script, build_post_script)
