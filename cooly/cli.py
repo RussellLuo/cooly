@@ -102,7 +102,9 @@ def archive(name, repo, tree_ish, output):
 @cli.command('build')
 @click.option('-c', '--config', help='The configuration file.')
 @click.argument('pkg', required=True)
-@click.option('--host', help='The hostname of the build server.')
+@click.option('--host',
+              help='The hostname of the build server. Defaults to the '
+                   'local host.')
 @click.option('--toolbin', help='The bin path of Cooly on the build server.')
 @click.option('--output', help='The local folder to store the distribution.')
 @click.option('--requirements',
@@ -123,7 +125,8 @@ def build(pkg, host, toolbin, output, requirements, pre_script, post_script):
 @cli.command('install')
 @click.option('-c', '--config', help='The configuration file.')
 @click.argument('dist', required=True)
-@click.option('--hosts', help='The server hostname to install on.')
+@click.option('--hosts',
+              help='The hostnames of the servers to install on.')
 @click.option('--path', help='The installation path on the server.')
 @click.option('--pre-command', help='The command to run before installing.')
 @click.option('--post-command', help='The command to run after installing.')
@@ -151,7 +154,9 @@ def install(dist, hosts, path, pre_command, post_command, max_versions):
 @click.option('--archive-output',
               help='The destination directory to store the archive. '
                    'Defaults to `/tmp`.')
-@click.option('--build-host', help='The hostname of the build server.')
+@click.option('--build-host',
+              help='The hostname of the build server. Defaults to the '
+                   'local host.')
 @click.option('--build-toolbin',
               help='The bin path of Cooly on the build server.')
 @click.option('--build-output',
@@ -166,7 +171,8 @@ def install(dist, hosts, path, pre_command, post_command, max_versions):
               help='The script to run before building.')
 @click.option('--build-post-script',
               help='The script to run after building.')
-@click.option('--install-hosts', help='The server hostname to install on.')
+@click.option('--install-hosts',
+              help='The hostnames of the servers to install on.')
 @click.option('--install-path', help='The installation path on the server.')
 @click.option('--install-pre-command',
               help='The command to run before installing.')
