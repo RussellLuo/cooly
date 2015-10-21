@@ -1,15 +1,47 @@
 import os
-import tempfile
+import uuid
 import functools
 import datetime
 
 from fabric.api import (
-    task, settings, lcd, local, cd, run, put, get, execute
+    task, settings, env, execute,
+    lcd, local, cd, run, put, get
 )
 from fabric.colors import green, yellow
 
 
 EXT = '.tar.gz'
+
+
+class Scratchpads(object):
+
+    def __init__(self):
+        self.queue = []
+
+    def execute(self, cmd, host):
+        if host is None:
+            local(cmd)
+        else:
+            with settings(host_string=host):
+                run(cmd)
+
+    def make(self, suffix='', host=None):
+        temp = os.path.join('/tmp/cooly-' + suffix, str(uuid.uuid4()))
+        self.queue.append((temp, host))
+        print('Created scratchpad in %s' % temp)
+        self.execute('mkdir -p %s' % temp, host)
+        return temp
+
+    def cleanup(self):
+        while self.queue:
+            temp, host = self.queue.pop()
+            print('Cleaning up scratchpad in %s' % temp)
+            self.execute('rm -rf %s' % temp, host)
+
+
+# The global scratchpads
+# Note: This is not thread-safe, but is enough for now.
+scratchpads = Scratchpads()
 
 
 def pythonic_arguments(task):
@@ -31,6 +63,19 @@ def pythonic_arguments(task):
             for arg, value in kwargs.iteritems()
         }
         return task(*evaluated_args, **evaluated_kwargs)
+    return decorator
+
+
+def cleanup_scratchpads(task):
+    """A decorator that ensures the global scratchpads is always cleaned
+    up whenever the task exits.
+    """
+    @functools.wraps(task)
+    def decorator(*args, **kwargs):
+        try:
+            return task(*args, **kwargs)
+        finally:
+            scratchpads.cleanup()
     return decorator
 
 
@@ -80,6 +125,7 @@ def cp(source, dest):
 
 @task
 @pythonic_arguments
+@cleanup_scratchpads
 def archive(repo, tree_ish, name_format, output):
     """Archive the package."""
     print(yellow('>>> Archive stage.'))
@@ -91,7 +137,7 @@ def archive(repo, tree_ish, name_format, output):
     # since `git archive --remote` is not widely supported,
     # we use `git clone` first, and then use `git archive` locally
     else:
-        repo_tmp = tempfile.mkdtemp()
+        repo_tmp = scratchpads.make('archive')
         with lcd(repo_tmp):
             local('git clone %s' % repo)
         repo_path = local('ls -d %s/*' % repo_tmp, capture=True)
@@ -116,18 +162,13 @@ def archive(repo, tree_ish, name_format, output):
     with lcd(repo_path):
         local('git archive -o "%s" %s' % (pkg, tree_ish))
 
-    # Clean up
-    try:
-        local('rm -rf %s' % repo_tmp)
-    except NameError:
-        pass
-
     print(green('>>> Package %s created!' % pkg))
     return pkg
 
 
 @task
 @pythonic_arguments
+@cleanup_scratchpads
 def build(pkg, host, toolbin, output, requirements, pre_script, post_script):
     """Build the package."""
     print(yellow('>>> Build stage.'))
@@ -141,8 +182,7 @@ def build(pkg, host, toolbin, output, requirements, pre_script, post_script):
 
     with settings(host_string=host):
         # Upload the package
-        build_tmp = '/tmp/cooly'
-        smart_run('mkdir -p %s' % build_tmp)
+        build_tmp = scratchpads.make('build', host=host)
         pkg_name = os.path.basename(pkg)
         smart_put(pkg, os.path.join(build_tmp, pkg_name))
 
@@ -163,29 +203,24 @@ def build(pkg, host, toolbin, output, requirements, pre_script, post_script):
             local('mkdir -p %s' % output)
             smart_get('dist/*%s' % EXT, dist)
 
-        # Clean up
-        smart_run('rm -rf %s' % build_tmp)
-
     print(green('>>> Distribution %s created!' % dist))
     return dist
 
 
 @task
 @pythonic_arguments
+@cleanup_scratchpads
 def install(dist, hosts, path, pre_command, post_command, max_versions):
     """Install the distribution."""
 
     def work():
         """The actual installation work."""
-        print(yellow('>>> Install stage.'))
-
         # Run the pre-install command if specified
         if pre_command:
             run(pre_command)
 
         # Upload the distribution
-        install_tmp = '/tmp/cooly'
-        run('rm -rf {0} && mkdir -p {0}'.format(install_tmp))
+        install_tmp = scratchpads.make('install', host=env.host_string)
         dist_name = os.path.basename(dist)
         put(dist, os.path.join(install_tmp, dist_name))
 
@@ -219,18 +254,16 @@ def install(dist, hosts, path, pre_command, post_command, max_versions):
             raise RuntimeError('Argument `max_versions` is not a '
                                'positive integer')
 
-        # Clean up
-        run('rm -rf %s' % install_tmp)
-
-        print(green('>>> Distribution %s installed!' % dist))
+    print(yellow('>>> Install stage.'))
 
     # Execute the work on multiple hosts (serially, by default)
     host_list = hosts.split(';')
     execute(work, hosts=host_list)
 
+    print(green('>>> Distribution %s installed!' % dist))
+
 
 @task
-@pythonic_arguments
 def deploy(archive_repo, archive_tree_ish, archive_name_format, archive_output,
            build_host, build_toolbin, build_output, build_requirements,
            build_pre_script, build_post_script, install_hosts, install_path,
