@@ -91,7 +91,8 @@ def cli():
 
 
 @cli.command('archive')
-@click.option('-c', '--config', help='The configuration file.')
+@click.option('-c', '--config', type=click.Path(),
+              help='The configuration file.')
 @click.option('--repo',
               help='The repository url, which can be a local path '
                    '(starts with "file://") or a remote VCS url.')
@@ -103,7 +104,7 @@ def cli():
                    '`{name}-{version}-{tree_ish}-{datetime:%Y%m%d%H%M%S}`. '
                    'The are now 4 optional bulit-in variables: {name}, '
                    '{version}, {tree_ish}, {datetime}.')
-@click.option('--output',
+@click.option('--output', type=click.Path(),
               help='The destination directory to store the archive. '
                    'Defaults to `/tmp`.')
 @merge_arguments_with_config('archive', requires=('repo',))
@@ -117,21 +118,35 @@ def archive(repo, tree_ish, name_format, output):
 
 
 @cli.command('build')
-@click.option('-c', '--config', help='The configuration file.')
-@click.argument('pkg', required=True)
+@click.option('-c', '--config', type=click.Path(),
+              help='The configuration file.')
+@click.argument('pkg', type=click.Path(), required=True)
 @click.option('--host',
               help='The hostname of the build server. Defaults to the '
                    'local host.')
-@click.option('--toolbin', help='The bin path of Cooly on the build server.')
-@click.option('--output', help='The local folder to store the distribution.')
-@click.option('--requirements',
+@click.option('--toolbin', type=click.Path(),
+              help='The bin path of Cooly on the build server.')
+@click.option('--output', type=click.Path(),
+              help='The local folder to store the distribution.')
+@click.option('--requirements', type=click.Path(),
               help='The path to a requirements file which contains '
                    'additional packages that should be installed in '
                    'addition to the main ones pulled from the `setup.py` '
                    'file. The path can be absolute, or be relative to '
                    'the root directory of the project.')
-@click.option('--pre-script', help='The script to run before building.')
-@click.option('--post-script', help='The script to run after building.')
+@click.option('--pre-script', type=click.Path(),
+              help='The path to an optional script that will be invoked in '
+                   'the build folder before building. This can be used to '
+                   'install build dependencies such as Cython, or to '
+                   'preprocess JavaScript and CSS files. The path can be '
+                   'absolute, or be relative to the root directory of '
+                   'the project.')
+@click.option('--post-script', type=click.Path(),
+              help='The path to an optional script that will be invoked in '
+                   'the build folder after building. This can be used to '
+                   'inject additional data into the archive. The path can '
+                   'be absolute, or be relative to the root directory of '
+                   'the project.')
 @merge_arguments_with_config('build', requires=('toolbin', 'output'))
 def build(pkg, host, toolbin, output, requirements, pre_script, post_script):
     """Build the package."""
@@ -140,12 +155,14 @@ def build(pkg, host, toolbin, output, requirements, pre_script, post_script):
 
 
 @cli.command('install')
-@click.option('-c', '--config', help='The configuration file.')
-@click.argument('dist', required=True)
+@click.option('-c', '--config', type=click.Path(),
+              help='The configuration file.')
+@click.argument('dist', type=click.Path(), required=True)
 @click.option('--hosts',
               help='The hostnames of the servers to install on.',
               multiple=True)
-@click.option('--path', help='The installation path on the server.')
+@click.option('--path', type=click.Path(),
+              help='The installation path on the server.')
 @click.option('--pre-command', help='The command to run before installing.')
 @click.option('--post-command', help='The command to run after installing.')
 @click.option('--max-versions',
@@ -161,7 +178,8 @@ def install(dist, hosts, path, pre_command, post_command, max_versions):
 
 
 @cli.command('deploy')
-@click.option('-c', '--config', help='The configuration file.')
+@click.option('-c', '--config', type=click.Path(),
+              help='The configuration file.')
 @click.option('--archive-repo',
               help='The repository url, which can be a local path '
                    '(starts with "file://") or a remote VCS url.')
@@ -173,30 +191,40 @@ def install(dist, hosts, path, pre_command, post_command, max_versions):
                    '`{name}-{version}-{tree_ish}-{datetime:%Y%m%d%H%M%S}`. '
                    'The are now 4 optional bulit-in variables: {name}, '
                    '{version}, {tree_ish}, {datetime}.')
-@click.option('--archive-output',
+@click.option('--archive-output', type=click.Path(),
               help='The destination directory to store the archive. '
                    'Defaults to `/tmp`.')
 @click.option('--build-host',
               help='The hostname of the build server. Defaults to the '
                    'local host.')
-@click.option('--build-toolbin',
+@click.option('--build-toolbin', type=click.Path(),
               help='The bin path of Cooly on the build server.')
-@click.option('--build-output',
+@click.option('--build-output', type=click.Path(),
               help='The local folder to store the distribution.')
-@click.option('--build-requirements',
+@click.option('--build-requirements', type=click.Path(),
               help='The path to a requirements file which contains '
                    'additional packages that should be installed in '
                    'addition to the main ones pulled from the `setup.py` '
                    'file. The path can be absolute, or be relative to '
                    'the root directory of the project.')
-@click.option('--build-pre-script',
-              help='The script to run before building.')
-@click.option('--build-post-script',
-              help='The script to run after building.')
+@click.option('--build-pre-script', type=click.Path(),
+              help='The path to an optional script that will be invoked in '
+                   'the build folder before building. This can be used to '
+                   'install build dependencies such as Cython, or to '
+                   'preprocess JavaScript and CSS files. The path can be '
+                   'absolute, or be relative to the root directory of '
+                   'the project.')
+@click.option('--build-post-script', type=click.Path(),
+              help='The path to an optional script that will be invoked in '
+                   'the build folder after building. This can be used to '
+                   'inject additional data into the archive. The path can '
+                   'be absolute, or be relative to the root directory of '
+                   'the project.')
 @click.option('--install-hosts',
               help='The hostnames of the servers to install on.',
               multiple=True)
-@click.option('--install-path', help='The installation path on the server.')
+@click.option('--install-path', type=click.Path(),
+              help='The installation path on the server.')
 @click.option('--install-pre-command',
               help='The command to run before installing.')
 @click.option('--install-post-command',
