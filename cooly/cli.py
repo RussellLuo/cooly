@@ -18,7 +18,7 @@ def fab(cmd, *args):
     """Run `cmd` with `args` via the fab command."""
     unicode_args = [
         unicode(
-            ';'.join(arg) if isinstance(arg, (list, tuple)) else arg
+            ';'.join(arg) if arg and isinstance(arg, (list, tuple)) else arg
         )
         for arg in args
     ]
@@ -253,3 +253,42 @@ def deploy(archive_repo, archive_tree_ish, archive_name_format, archive_output,
                build_pre_script, build_post_script, install_hosts,
                install_path, install_pre_command, install_post_command,
                install_max_versions)
+
+
+@cli.command('list')
+@click.option('-c', '--config', type=click.Path(),
+              help='The configuration file.')
+@click.option('--hosts',
+              help='The hostnames of the servers where the versions located. '
+                   'This can be the same as the `--hosts` argument of the '
+                   '`cooly install` command.',
+              multiple=True)
+@click.option('--path', type=click.Path(),
+              help='The directory path to the versions. This can be the same '
+                   'as the `--path` argument of the `cooly install` command.')
+@merge_arguments_with_config('install', requires=('path',))
+def _list(hosts, path):
+    """List all available versions."""
+    return fab('list', hosts, path)
+
+
+@cli.command('rollback')
+@click.option('-c', '--config', type=click.Path(),
+              help='The configuration file.')
+@click.option('--hosts',
+              help='The hostnames of the servers where the versions located. '
+                   'This can be the same as the `--hosts` argument of the '
+                   '`cooly install` command.',
+              multiple=True)
+@click.option('--path', type=click.Path(),
+              help='The directory path to the versions. This can be the same '
+                   'as the `--path` argument of the `cooly install` command.')
+@click.option('--post-command',
+              help='The command to run after rollbacking. This is the '
+                   'same as the `--post-command` argument of the `cooly '
+                   'install` command.')
+@click.argument('version', required=True)
+@merge_arguments_with_config('install', requires=('path',))
+def rollback(hosts, path, post_command, version):
+    """Rollback current version to the specified one."""
+    return fab('rollback', hosts, path, post_command, version)

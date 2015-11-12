@@ -2,15 +2,18 @@ import os
 import uuid
 import functools
 import datetime
+from collections import OrderedDict
 
 from fabric.api import (
     task, settings, env, execute,
     lcd, local, cd, run, put, get
 )
+from fabric.context_managers import quiet
 from fabric.colors import green, yellow
 
 
 EXT = '.tar.gz'
+LATEST_FLAG = 'LATEST'
 
 
 class Scratchpads(object):
@@ -121,6 +124,27 @@ def get_obsolete_version_names(path, max_versions, ignore_pattern=''):
 def cp(source, dest):
     """Copy `source` to `dest` locally."""
     local('cp -rf %s %s' % (source, dest))
+
+
+def get_versions_alias_mapping(path, remote=True, latest_flag=LATEST_FLAG):
+    """Get the ordered mapping from the alias to the name of the
+    versions in `path`, latest first.
+    """
+    with quiet():
+        cmd = 'ls -1t -I current %s' % path
+        if remote:
+            result = run(cmd)
+        else:
+            result = local(cmd, capture=True)
+        names = result.splitlines()
+
+    if not names:
+        return {}
+
+    mapping = OrderedDict([(latest_flag, names[0])])
+    for i, name in enumerate(names[1:]):
+        mapping['%s~%s' % (latest_flag, i + 1)] = name
+    return mapping
 
 
 @task
@@ -275,3 +299,72 @@ def deploy(archive_repo, archive_tree_ish, archive_name_format, archive_output,
                  build_requirements, build_pre_script, build_post_script)
     install(dist, install_hosts, install_path, install_pre_command,
             install_post_command, install_max_versions)
+
+
+@task
+@pythonic_arguments
+def list(hosts, path):
+    """List all available versions."""
+
+    def list_versions(remote=True):
+        """List the names and aliases of the versions in `path`."""
+        mapping = get_versions_alias_mapping(path, remote)
+        versions = [
+            '%-8s    %s' % (alias, name)
+            for alias, name in mapping.items()
+        ]
+
+        print('')
+        print('\n'.join(versions))
+
+    if not hosts:
+        # List versions locally
+        list_versions(remote=False)
+    else:
+        # List versions on multiple hosts (serially, by default)
+        host_list = hosts.split(';')
+        execute(list_versions, hosts=host_list)
+
+
+@task
+@pythonic_arguments
+def rollback(hosts, path, post_command, version):
+    """Rollback current version to the specified one."""
+
+    def rollback_version(remote=True):
+        """The actual rollback work."""
+        smart_run = run if remote else local
+
+        # Get the final target version
+        target_version = version
+        if target_version.startswith(LATEST_FLAG):
+            mapping = get_versions_alias_mapping(path, remote)
+            if target_version in mapping:
+                target_version = mapping[target_version]
+
+        # Assure that the target path does exist
+        target_path = os.path.join(path, target_version)
+        with quiet():
+            exists = smart_run('test -e %s' % target_path).succeeded
+        if not exists:
+            raise SystemExit(
+                'Error: No version named `{0}` exists in {1}, nor does '
+                'a version have the alias `{0}`'.format(version, path)
+            )
+
+        # Overwrite the symlink for the newly specified
+        # distribution to make it available
+        serve_path = os.path.join(path, 'current')
+        smart_run('ln -sfn %s %s' % (target_path, serve_path))
+
+        # Run the post-install command if specified
+        if post_command:
+            run(post_command)
+
+    if not hosts:
+        # Rollback locally
+        rollback_version(remote=False)
+    else:
+        # Rollback on multiple hosts (serially, by default)
+        host_list = hosts.split(';')
+        execute(rollback_version, hosts=host_list)
