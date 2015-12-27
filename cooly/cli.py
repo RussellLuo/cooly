@@ -82,6 +82,16 @@ def merge_arguments_with_config(part=None, requires=()):
     return wrapper
 
 
+def add_param_dict(command):
+    """A decorator that adds a `param_dict` attribute to the command object.
+
+    The `param_dict` holds the mapping from the parameter names to the
+    parameter objects.
+    """
+    command.param_dict = {param.name: param for param in command.params}
+    return command
+
+
 @click.group(context_settings={
     'auto_envvar_prefix': 'COOLY'
 })
@@ -90,6 +100,7 @@ def cli():
     """Cooly helps you deploy Python projects."""
 
 
+@add_param_dict
 @cli.command('archive')
 @click.option('-c', '--config', type=click.Path(),
               help='The configuration file.')
@@ -117,6 +128,7 @@ def archive(repo, tree_ish, name_format, output):
                name_format, output or '/tmp')
 
 
+@add_param_dict
 @cli.command('build')
 @click.option('-c', '--config', type=click.Path(),
               help='The configuration file.')
@@ -158,6 +170,7 @@ def build(pkg, host, toolbin, output, requirements,
                pre_script, post_script, wheel_cache or '~/.cache/cooly')
 
 
+@add_param_dict
 @cli.command('install')
 @click.option('-c', '--config', type=click.Path(),
               help='The configuration file.')
@@ -185,62 +198,46 @@ def install(dist, hosts, path, pre_command, post_command, max_versions):
 @click.option('-c', '--config', type=click.Path(),
               help='The configuration file.')
 @click.option('--archive-repo',
-              help='The repository url, which can be a local path '
-                   '(starts with "file://") or a remote VCS url.')
+              help=archive.param_dict['repo'].help)
 @click.option('--archive-tree-ish',
-              help='The tree or commit to produce an archive for. '
-                   'Defaults to `HEAD`.')
+              help=archive.param_dict['tree_ish'].help)
 @click.option('--archive-name-format',
-              help='The format of the archive name. Defaults to '
-                   '`{name}-{version}-{tree_ish}-{datetime:%Y%m%d%H%M%S}`. '
-                   'The are now 4 optional bulit-in variables: {name}, '
-                   '{version}, {tree_ish}, {datetime}.')
-@click.option('--archive-output', type=click.Path(),
-              help='The destination directory to store the archive. '
-                   'Defaults to `/tmp`.')
+              help=archive.param_dict['name_format'].help)
+@click.option('--archive-output',
+              type=archive.param_dict['output'].type,
+              help=archive.param_dict['output'].help)
 @click.option('--build-host',
-              help='The hostname of the build server. Defaults to the '
-                   'local host.')
-@click.option('--build-toolbin', type=click.Path(),
-              help='The bin path of Cooly on the build server.')
-@click.option('--build-output', type=click.Path(),
-              help='The local folder to store the distribution.')
-@click.option('--build-requirements', type=click.Path(),
-              help='The path to a requirements file which contains '
-                   'additional packages that should be installed in '
-                   'addition to the main ones pulled from the `setup.py` '
-                   'file. The path can be absolute, or be relative to '
-                   'the root directory of the project.')
-@click.option('--build-pre-script', type=click.Path(),
-              help='The path to an optional script that will be invoked in '
-                   'the build folder before building. This can be used to '
-                   'install build dependencies such as Cython, or to '
-                   'preprocess JavaScript and CSS files. The path can be '
-                   'absolute, or be relative to the root directory of '
-                   'the project.')
-@click.option('--build-post-script', type=click.Path(),
-              help='The path to an optional script that will be invoked in '
-                   'the build folder after building. This can be used to '
-                   'inject additional data into the archive. The path can '
-                   'be absolute, or be relative to the root directory of '
-                   'the project.')
-@click.option('--build-wheel-cache', type=click.Path(),
-              help='The path to an optional folder where Cooly should '
-                   'cache wheels. Defaults to `~/.cache/cooly`.')
+              help=build.param_dict['host'].help)
+@click.option('--build-toolbin',
+              type=build.param_dict['toolbin'].type,
+              help=build.param_dict['toolbin'].help)
+@click.option('--build-output',
+              type=build.param_dict['output'].type,
+              help=build.param_dict['output'].help)
+@click.option('--build-requirements',
+              type=build.param_dict['requirements'].type,
+              help=build.param_dict['requirements'].help)
+@click.option('--build-pre-script',
+              type=build.param_dict['pre_script'].type,
+              help=build.param_dict['pre_script'].help)
+@click.option('--build-post-script',
+              type=build.param_dict['post_script'].type,
+              help=build.param_dict['post_script'].help)
+@click.option('--build-wheel-cache',
+              type=build.param_dict['wheel_cache'].type,
+              help=build.param_dict['wheel_cache'].help)
 @click.option('--install-hosts',
-              help='The hostnames of the servers to install on.',
+              help=install.param_dict['hosts'].help,
               multiple=True)
-@click.option('--install-path', type=click.Path(),
-              help='The installation path on the server.')
+@click.option('--install-path',
+              type=install.param_dict['path'].type,
+              help=install.param_dict['path'].help)
 @click.option('--install-pre-command',
-              help='The command to run before installing.')
+              help=install.param_dict['pre_command'].help)
 @click.option('--install-post-command',
-              help='The command to run after installing.')
+              help=install.param_dict['post_command'].help)
 @click.option('--install-max-versions',
-              help='The maximum number of the versions installed. '
-                   'If specified (must be greater than 0), the earliest '
-                   'versions will be removed when the number exceeds the '
-                   'limit. Defaults to be unlimited.')
+              help=install.param_dict['max_versions'].help)
 @merge_arguments_with_config(requires=(
     'archive_repo',
     'build_toolbin', 'build_output',
