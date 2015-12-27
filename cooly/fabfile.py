@@ -193,7 +193,8 @@ def archive(repo, tree_ish, name_format, output):
 @task
 @pythonic_arguments
 @cleanup_scratchpads
-def build(pkg, host, toolbin, output, requirements, pre_script, post_script):
+def build(pkg, host, toolbin, output, requirements,
+          pre_script, post_script, wheel_cache):
     """Build the package."""
     print(yellow('>>> Build stage.'))
 
@@ -216,11 +217,12 @@ def build(pkg, host, toolbin, output, requirements, pre_script, post_script):
             dist = os.path.join(output, pkg_name)
 
             build_tool = os.path.join(toolbin, 'platter')
-            smart_run('%s build %s %s %s .' % (
+            smart_run('%s build %s %s %s %s .' % (
                 build_tool,
                 '--requirements=%s' % requirements if requirements else '',
                 '--prebuild-script=%s' % pre_script if pre_script else '',
-                '--postbuild-script=%s' % post_script if post_script else ''
+                '--postbuild-script=%s' % post_script if post_script else '',
+                '--wheel-cache=%s' % os.path.expanduser(wheel_cache)
             ))
 
             # Download the distribution
@@ -290,13 +292,15 @@ def install(dist, hosts, path, pre_command, post_command, max_versions):
 @task
 def deploy(archive_repo, archive_tree_ish, archive_name_format, archive_output,
            build_host, build_toolbin, build_output, build_requirements,
-           build_pre_script, build_post_script, install_hosts, install_path,
-           install_pre_command, install_post_command, install_max_versions):
+           build_pre_script, build_post_script, build_wheel_cache,
+           install_hosts, install_path, install_pre_command,
+           install_post_command, install_max_versions):
     """Deploy the package."""
     pkg = archive(archive_repo, archive_tree_ish, archive_name_format,
                   archive_output)
     dist = build(pkg, build_host, build_toolbin, build_output,
-                 build_requirements, build_pre_script, build_post_script)
+                 build_requirements, build_pre_script, build_post_script,
+                 build_wheel_cache)
     install(dist, install_hosts, install_path, install_pre_command,
             install_post_command, install_max_versions)
 

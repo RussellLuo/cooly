@@ -147,11 +147,15 @@ def archive(repo, tree_ish, name_format, output):
                    'inject additional data into the archive. The path can '
                    'be absolute, or be relative to the root directory of '
                    'the project.')
+@click.option('--wheel-cache', type=click.Path(),
+              help='The path to an optional folder where Cooly should '
+                   'cache wheels. Defaults to `~/.cache/cooly`.')
 @merge_arguments_with_config('build', requires=('toolbin', 'output'))
-def build(pkg, host, toolbin, output, requirements, pre_script, post_script):
+def build(pkg, host, toolbin, output, requirements,
+          pre_script, post_script, wheel_cache):
     """Build the package."""
-    return fab('build', pkg, host, toolbin, output,
-               requirements, pre_script, post_script)
+    return fab('build', pkg, host, toolbin, output, requirements,
+               pre_script, post_script, wheel_cache or '~/.cache/cooly')
 
 
 @cli.command('install')
@@ -220,6 +224,9 @@ def install(dist, hosts, path, pre_command, post_command, max_versions):
                    'inject additional data into the archive. The path can '
                    'be absolute, or be relative to the root directory of '
                    'the project.')
+@click.option('--build-wheel-cache', type=click.Path(),
+              help='The path to an optional folder where Cooly should '
+                   'cache wheels. Defaults to `~/.cache/cooly`.')
 @click.option('--install-hosts',
               help='The hostnames of the servers to install on.',
               multiple=True)
@@ -241,8 +248,9 @@ def install(dist, hosts, path, pre_command, post_command, max_versions):
 ))
 def deploy(archive_repo, archive_tree_ish, archive_name_format, archive_output,
            build_host, build_toolbin, build_output, build_requirements,
-           build_pre_script, build_post_script, install_hosts, install_path,
-           install_pre_command, install_post_command, install_max_versions):
+           build_pre_script, build_post_script, build_wheel_cache,
+           install_hosts, install_path, install_pre_command,
+           install_post_command, install_max_versions):
     """Deploy the package."""
     archive_name_format = archive_name_format or (
         '{name}-{version}-{tree_ish}-{datetime:%Y%m%d%H%M%S}'
@@ -250,9 +258,10 @@ def deploy(archive_repo, archive_tree_ish, archive_name_format, archive_output,
     return fab('deploy', archive_repo, archive_tree_ish or 'HEAD',
                archive_name_format, archive_output or '/tmp',
                build_host, build_toolbin, build_output, build_requirements,
-               build_pre_script, build_post_script, install_hosts,
-               install_path, install_pre_command, install_post_command,
-               install_max_versions)
+               build_pre_script, build_post_script,
+               build_wheel_cache or '~/.cache/cooly',
+               install_hosts, install_path, install_pre_command,
+               install_post_command, install_max_versions)
 
 
 @cli.command('list')
