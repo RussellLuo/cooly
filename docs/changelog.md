@@ -3,6 +3,14 @@
 Here you can see the full list of changes between each Cooly release.
 
 
+## Version 0.1.3 - Dev
+
+(release date to be announced)
+
+- Add `--wheel-cache` option
+- Simplify the parameter definition of `deploy` subcommand
+
+
 ## Version 0.1.2
 
 Released on Dec 15th 2015.
