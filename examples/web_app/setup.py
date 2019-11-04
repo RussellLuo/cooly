@@ -33,7 +33,7 @@ setup(
     license=get_info('__license__'),
     long_description=get_info('__doc__'),
     packages=find_packages(),
-    install_requires=['Flask==0.10.1'],
+    install_requires=['Flask==1.0'],
     # Include package data recursively in MANIFEST.in
     include_package_data=True,
     data_files=find_data_files('data', 'etc'),
